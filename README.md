@@ -38,4 +38,4 @@ All `.dll` mod files located in the `mods/` folder will be automatically loaded 
 - Only `.dll` mod files are recognized and loaded.
 - Ensure `winhttp.dll` and `Minecraft.Windows.exe` are in the same directory.
 
----
+--- edurxito
