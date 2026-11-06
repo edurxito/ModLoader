@@ -28,6 +28,7 @@ void ensureConfigExists(const std::filesystem::path &configPath) {
     std::ofstream cfg(configPath);
     cfg << "[General]\n";
     cfg << "Console=true\n";
+    cfg << "ShowPath=false\n";
     cfg.close();
     std::cout << "[INFO] Created default config at " << configPath << std::endl;
   }
@@ -57,7 +58,7 @@ std::filesystem::path getMinecraftModsPath() {
   return getDllDirectory() / "mods";
 }
 
-void AddDirectoryToPathEnv(const std::string &directory) {
+void AddDirectoryToPathEnv(const std::string &directory, bool showPath) {
   DWORD len = GetEnvironmentVariableW(L"PATH", nullptr, 0);
   std::wstring newPath;
 
@@ -78,7 +79,7 @@ void AddDirectoryToPathEnv(const std::string &directory) {
   if (!SetEnvironmentVariableW(L"PATH", newPath.c_str())) {
     std::cout << "[ERROR] Failed to set PATH variable. Code: " << GetLastError()
               << std::endl;
-  } else {
+  } else if (showPath) {
     std::wcout << L"[INFO] Added to PATH: " << wDir << std::endl;
   }
 }
@@ -105,6 +106,7 @@ void LoadAllMods() {
   ensureConfigExists(configPath);
 
   bool showConsole = readBoolConfig(configPath, "Console", true);
+  bool showPath = readBoolConfig(configPath, "ShowPath", false);
 
   if (showConsole)
     OpenConsole();
@@ -117,7 +119,7 @@ void LoadAllMods() {
     return;
   }
 
-  AddDirectoryToPathEnv(modsPath.string());
+  AddDirectoryToPathEnv(modsPath.string(), showPath);
 
   for (const auto &entry : std::filesystem::directory_iterator(modsPath)) {
     if (entry.is_regular_file() && entry.path().extension() == ".dll") {
