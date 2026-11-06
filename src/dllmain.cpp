@@ -72,68 +72,10 @@ __E__56__orig WinHttpSetTimeouts_orig;
 typedef BOOL(__stdcall *__E__65__orig)(HINTERNET, LPCVOID, DWORD, LPDWORD);
 __E__65__orig WinHttpWriteData_orig;
 
-void LoadAllMods() {
-  char szModulePath[MAX_PATH]{};
-  if (!GetModuleFileNameA(nullptr, szModulePath, MAX_PATH)) {
-    std::cout << "[ERROR] GetModuleFileNameA failed. Error: " << GetLastError()
-              << std::endl;
-    return;
-  }
-
-  std::filesystem::path exeDir(szModulePath);
-  exeDir = exeDir.parent_path();
-  std::filesystem::path pluginsPath = exeDir / "mods";
-
-  if (!std::filesystem::exists(pluginsPath)) {
-    std::filesystem::create_directory(pluginsPath);
-    return;
-  }
-
-  for (const auto &entry : std::filesystem::directory_iterator(pluginsPath)) {
-    if (entry.is_regular_file() && entry.path().extension() == ".dll") {
-      std::cout << "[INFO] Loading plugin: " << entry.path().filename().string()
-                << std::endl;
-      HMODULE mod = LoadLibraryA(entry.path().string().c_str());
-      if (!mod) {
-        std::cout << "[ERROR] Failed to load plugin " << entry.path()
-                  << " code " << GetLastError() << std::endl;
-      }
-    }
-  }
-}
-void openConsole() {
-  if (AllocConsole()) {
-    SetConsoleTitleA("Debug Console");
-    system("chcp 65001>nul");
-
-    FILE *fp = nullptr;
-    freopen_s(&fp, "CONOUT$", "w", stdout);
-    freopen_s(&fp, "CONOUT$", "w", stderr);
-    freopen_s(&fp, "CONIN$", "r", stdin);
-
-    setvbuf(stdout, nullptr, _IONBF, 0);
-    setvbuf(stderr, nullptr, _IONBF, 0);
-    setvbuf(stdin, nullptr, _IONBF, 0);
-    std::cout.clear();
-  }
-}
-
-bool ShouldShowConsole(const std::filesystem::path &exeDir) {
-  std::filesystem::path iniPath = exeDir / "config.ini";
-
-  if (!std::filesystem::exists(iniPath)) {
-    std::ofstream ini(iniPath);
-    if (ini) {
-      ini << "[General]\n";
-      ini << "ShowConsole=0\n";
-    }
-    return false;
-  }
-
-  int value = GetPrivateProfileIntA("General", "ShowConsole", 0,
-                                     iniPath.string().c_str());
-  return value != 0;
-}
+// LoadAllMods() is defined in load.cpp. It already reads config.ini
+// (key "Console") to decide whether to open the debug console, and
+// loads mods from %APPDATA%\Minecraft Bedrock(\ Preview)\mods.
+void LoadAllMods();
 
 BOOL WINAPI DllMain(HINSTANCE hInst, DWORD reason, LPVOID unk) {
   if (reason == DLL_PROCESS_ATTACH) {
@@ -148,9 +90,6 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD reason, LPVOID unk) {
     std::string exeName = exeFile.filename().string();
 
     if (_stricmp(exeName.c_str(), "Minecraft.Windows.exe") == 0) {
-      if (ShouldShowConsole(exeFile.parent_path())) {
-        openConsole();
-      }
       LoadAllMods();
     }
     hLThis = hInst;
