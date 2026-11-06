@@ -27,7 +27,7 @@ void ensureConfigExists(const std::filesystem::path &configPath) {
   if (!std::filesystem::exists(configPath)) {
     std::ofstream cfg(configPath);
     cfg << "[General]\n";
-    cfg << "Console=true\n";
+    cfg << "Console=false\n";
     cfg << "ShowPath=false\n";
     cfg.close();
     std::cout << "[INFO] Created default config at " << configPath << std::endl;
@@ -105,7 +105,7 @@ void LoadAllMods() {
   std::filesystem::path configPath = getConfigPath();
   ensureConfigExists(configPath);
 
-  bool showConsole = readBoolConfig(configPath, "Console", true);
+  bool showConsole = readBoolConfig(configPath, "Console", false);
   bool showPath = readBoolConfig(configPath, "ShowPath", false);
 
   if (showConsole)
