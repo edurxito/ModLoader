@@ -28,7 +28,6 @@ void ensureConfigExists(const std::filesystem::path &configPath) {
     std::ofstream cfg(configPath);
     cfg << "[General]\n";
     cfg << "Console=true\n";
-    cfg << "Preview=false\n";
     cfg.close();
     std::cout << "[INFO] Created default config at " << configPath << std::endl;
   }
@@ -53,19 +52,9 @@ bool readBoolConfig(const std::filesystem::path &configPath,
   return defaultValue;
 }
 
-std::string getMinecraftModsPath(bool preview) {
-  char appDataPath[MAX_PATH];
-  if (FAILED(SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, appDataPath))) {
-    std::cout << "[ERROR] Failed to get APPDATA path." << std::endl;
-    return "";
-  }
-
-  std::string path = std::string(appDataPath);
-  if (preview)
-    path += "\\Minecraft Bedrock Preview\\mods";
-  else
-    path += "\\Minecraft Bedrock\\mods";
-  return path;
+std::filesystem::path getMinecraftModsPath() {
+  // mods folder lives next to winhttp.dll / Minecraft.Windows.exe
+  return getDllDirectory() / "mods";
 }
 
 void AddDirectoryToPathEnv(const std::string &directory) {
@@ -116,13 +105,11 @@ void LoadAllMods() {
   ensureConfigExists(configPath);
 
   bool showConsole = readBoolConfig(configPath, "Console", true);
-  bool preview = readBoolConfig(configPath, "Preview", false);
 
   if (showConsole)
     OpenConsole();
 
-  std::string modsPathStr = getMinecraftModsPath(preview);
-  std::filesystem::path modsPath(modsPathStr);
+  std::filesystem::path modsPath = getMinecraftModsPath();
 
   if (!std::filesystem::exists(modsPath)) {
     std::filesystem::create_directories(modsPath);
@@ -130,7 +117,7 @@ void LoadAllMods() {
     return;
   }
 
-  AddDirectoryToPathEnv(modsPathStr);
+  AddDirectoryToPathEnv(modsPath.string());
 
   for (const auto &entry : std::filesystem::directory_iterator(modsPath)) {
     if (entry.is_regular_file() && entry.path().extension() == ".dll") {
